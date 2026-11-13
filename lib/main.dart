@@ -12,6 +12,7 @@ import 'features/auth/presentation/splash_screen.dart';
 import 'features/credit/domain/services/credit_service.dart';
 import 'features/credit/presentation/credit_page.dart';
 import 'features/dashboard/presentation/dashboard_page.dart';
+import 'features/notifications/presentation/notification_screen.dart';
 import 'features/payments/domain/services/payment_gateway.dart';
 import 'features/profile/presentation/profile_page.dart';
 import 'features/savings/domain/services/savings_service.dart';
@@ -248,8 +249,26 @@ class _ClientShell extends StatefulWidget {
   State<_ClientShell> createState() => _ClientShellState();
 }
 
-class _ClientShellState extends State<_ClientShell> {
+class _ClientShellState extends State<_ClientShell>
+    with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
+  late final AnimationController _pageTransitionController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageTransitionController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+      value: 1,
+    );
+  }
+
+  @override
+  void dispose() {
+    _pageTransitionController.dispose();
+    super.dispose();
+  }
 
   static const _titles = [
     'Accueil',
@@ -287,11 +306,11 @@ class _ClientShellState extends State<_ClientShell> {
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surface,
-        titleSpacing: 0,
+        titleSpacing: 8,
         title: Row(
           children: [
-            const AtfLogo(width: 82, height: 38, padding: 3),
-            const SizedBox(width: 9),
+            const AtfLogo(width: 68, height: 36, padding: 3),
+            const SizedBox(width: 8),
             Flexible(
               child: Text(
                 _titles[_selectedIndex],
@@ -321,17 +340,39 @@ class _ClientShellState extends State<_ClientShell> {
                   : Icons.dark_mode_outlined,
             ),
           ),
+          IconButton(
+            tooltip: 'Notifications',
+            onPressed: _openNotifications,
+            icon: const Icon(Icons.notifications_none_rounded),
+          ),
         ],
       ),
       drawer: _buildDrawer(),
       body: SafeArea(
         top: false,
-        child: IndexedStack(index: _selectedIndex, children: pages),
+        child: FadeTransition(
+          opacity: CurvedAnimation(
+            parent: _pageTransitionController,
+            curve: Curves.easeOut,
+          ),
+          child: SlideTransition(
+            position:
+                Tween<Offset>(
+                  begin: const Offset(0.025, 0),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(
+                    parent: _pageTransitionController,
+                    curve: Curves.easeOutCubic,
+                  ),
+                ),
+            child: IndexedStack(index: _selectedIndex, children: pages),
+          ),
+        ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex < 4 ? _selectedIndex : 0,
-        onDestinationSelected: (index) =>
-            setState(() => _selectedIndex = index),
+        onDestinationSelected: _showPage,
         backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
         indicatorColor: Theme.of(context).colorScheme.primaryContainer,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
@@ -475,7 +516,39 @@ class _ClientShellState extends State<_ClientShell> {
 
   void _selectPage(int index) {
     Navigator.pop(context);
+    _showPage(index);
+  }
+
+  void _showPage(int index) {
+    if (index == _selectedIndex) return;
     setState(() => _selectedIndex = index);
+    _pageTransitionController.forward(from: 0);
+  }
+
+  void _openNotifications() {
+    Navigator.of(context).push<void>(
+      PageRouteBuilder<void>(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const NotificationScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final curved = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+          );
+          return FadeTransition(
+            opacity: curved,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0.04, 0),
+                end: Offset.zero,
+              ).animate(curved),
+              child: child,
+            ),
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 320),
+      ),
+    );
   }
 }
 

@@ -22,6 +22,7 @@ lib/
 │   │   ├── domain/services/credit_service.dart
 │   │   └── presentation/credit_page.dart
 │   ├── dashboard/presentation/dashboard_page.dart
+│   ├── notifications/presentation/notification_screen.dart
 │   ├── payments/
 │   │   ├── domain/models/{payment_result,withdrawal_ticket}.dart
 │   │   ├── domain/services/payment_gateway.dart
@@ -52,6 +53,8 @@ remplacés par des adaptateurs de données/API lorsque le backend sera disponibl
 
 - Splash d'accueil de 15 secondes avec le logo officiel, thème basculable et
   palette émeraude en mode clair, bleu marine/or/blanc en mode sombre.
+- Navigation client animée, tableau de bord avec apparition progressive des
+  principales cartes/actions et écran de notifications de démonstration.
 - Inscription avec sélection des justificatifs depuis la galerie, connexion
   démo, profil et menu client.
 - Portefeuille USD/CDF, virements convertis au taux administré et journal des

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../core/money/currency.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/atf_logo.dart';
 import '../../../core/widgets/gradient_button.dart';
 import '../../payments/domain/models/payment_result.dart';
 import '../../payments/domain/models/withdrawal_ticket.dart';
@@ -68,30 +67,34 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             ),
             const SizedBox(height: 12),
-            _buildBalanceCard(otherCurrency, convertedBalance),
+            _DashboardEntrance(
+              child: _buildBalanceCard(otherCurrency, convertedBalance),
+            ),
             const SizedBox(height: 24),
             _buildCurrencyPicker(),
             const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: GradientButton(
-                    expanded: false,
-                    label: 'Déposer',
-                    icon: Icons.add_rounded,
-                    onPressed: () => _showMoneyDialog(withdrawal: false),
+            _DashboardEntrance(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GradientButton(
+                      expanded: false,
+                      label: 'Déposer',
+                      icon: Icons.add_rounded,
+                      onPressed: () => _showMoneyDialog(withdrawal: false),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: GradientButton(
-                    expanded: false,
-                    label: 'Retirer',
-                    icon: Icons.north_east_rounded,
-                    onPressed: () => _showMoneyDialog(withdrawal: true),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: GradientButton(
+                      expanded: false,
+                      label: 'Retirer',
+                      icon: Icons.north_east_rounded,
+                      onPressed: () => _showMoneyDialog(withdrawal: true),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             const SizedBox(height: 32),
             Row(
@@ -131,19 +134,16 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildHeader() {
     return Row(
       children: [
-        const AtfLogo(width: 78, height: 42, padding: 3),
-        const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'AFRICAN TRUST',
+                'Bienvenue',
                 style: TextStyle(
                   color: context.appText,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.15,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 3),
@@ -152,27 +152,6 @@ class _DashboardPageState extends State<DashboardPage> {
                 style: TextStyle(color: context.appMuted, fontSize: 12),
               ),
             ],
-          ),
-        ),
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: context.appCard,
-            borderRadius: BorderRadius.circular(15),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.shadow
-                    .withValues(alpha: 0.08),
-                blurRadius: 16,
-                offset: Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Icon(
-            Icons.notifications_none_rounded,
-            color: context.appText,
-            size: 21,
           ),
         ),
       ],
@@ -328,6 +307,27 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
     );
   }
+}
+
+class _DashboardEntrance extends StatelessWidget {
+  const _DashboardEntrance({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
+    tween: Tween(begin: 0, end: 1),
+    duration: const Duration(milliseconds: 520),
+    curve: Curves.easeOutCubic,
+    builder: (context, progress, child) => Opacity(
+      opacity: progress,
+      child: Transform.translate(
+        offset: Offset(0, 14 * (1 - progress)),
+        child: child,
+      ),
+    ),
+    child: child,
+  );
 }
 
 class _MoneyDialog extends StatefulWidget {

@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/atf_logo.dart';
 import '../../auth/domain/models/user.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -32,8 +31,6 @@ class ProfilePage extends StatelessWidget {
           ),
           child: Column(
             children: [
-              const AtfLogo(width: 188, height: 66),
-              const SizedBox(height: 17),
               CircleAvatar(
                 radius: 39,
                 backgroundColor: heroForeground.withValues(alpha: 0.18),
