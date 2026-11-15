@@ -1,5 +1,5 @@
-import 'dart:typed_data';
-
+import 'package:cunning_document_scanner/cunning_document_scanner.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -8,6 +8,7 @@ import '../../../core/widgets/atf_logo.dart';
 import '../../../core/widgets/gradient_button.dart';
 import '../domain/models/mandataire.dart';
 import '../domain/models/user.dart';
+import '../domain/registration_validation.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({
@@ -188,16 +189,16 @@ class _RegistrationForm extends StatefulWidget {
 
 class _RegistrationFormState extends State<_RegistrationForm> {
   final _formKey = GlobalKey<FormState>();
-  final _controllers = List.generate(15, (_) => TextEditingController());
+  final _controllers = List.generate(17, (_) => TextEditingController());
   final _imagePicker = ImagePicker();
   DateTime? _dateOfBirth;
   _PickedImage? _profileImage;
-  _PickedImage? _identityFrontImage;
-  _PickedImage? _identityBackImage;
-  _PickedImage? _agentIdentityImage;
+  _ScannedDocument? _identityDocument;
+  _ScannedDocument? _agentIdentityDocument;
   String? _imageError;
   String? _dateError;
   bool _obscurePassword = true;
+  bool _scanningDocument = false;
 
   @override
   void dispose() {
@@ -222,309 +223,334 @@ class _RegistrationFormState extends State<_RegistrationForm> {
   TextEditingController get _agentName => _controllers[12];
   TextEditingController get _agentContact => _controllers[13];
   TextEditingController get _agentRelation => _controllers[14];
+  TextEditingController get _agentEmail => _controllers[15];
+  TextEditingController get _agentIdentity => _controllers[16];
 
   @override
   Widget build(BuildContext context) {
     return Form(
       key: _formKey,
-      child: ListView(
+      child: SingleChildScrollView(
         key: const ValueKey('registration'),
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-        children: [
-          Row(
-            children: [
-              IconButton.filledTonal(
-                onPressed: widget.onBack,
-                icon: const Icon(Icons.arrow_back_rounded),
-                style: IconButton.styleFrom(
-                  backgroundColor: context.appAccentSoft,
-                  foregroundColor: context.appAccent,
-                ),
-              ),
-              const Spacer(),
-              const AtfLogo(width: 142, height: 48),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const _RegistrationHero(),
-          const SizedBox(height: 20),
-          _RegistrationSection(
-            number: '01',
-            title: 'Vos informations',
-            subtitle: 'Elles nous permettent de créer votre compte.',
-            icon: Icons.person_outline_rounded,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: _InputField(
-                      controller: _lastName,
-                      label: 'Nom',
-                      validator: _required,
-                    ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                IconButton.filledTonal(
+                  onPressed: widget.onBack,
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  style: IconButton.styleFrom(
+                    backgroundColor: context.appAccentSoft,
+                    foregroundColor: context.appAccent,
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _InputField(
-                      controller: _postName,
-                      label: 'Post-nom',
-                      validator: _required,
+                ),
+                const Spacer(),
+                const AtfLogo(width: 142, height: 48),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const _RegistrationHero(),
+            const SizedBox(height: 20),
+            _RegistrationSection(
+              number: '01',
+              title: 'Vos informations',
+              subtitle: 'Elles nous permettent de créer votre compte.',
+              icon: Icons.person_outline_rounded,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _InputField(
+                        controller: _lastName,
+                        label: 'Nom',
+                        validator: _required,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _InputField(
+                        controller: _postName,
+                        label: 'Post-nom',
+                        validator: _required,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _InputField(
+                  controller: _firstName,
+                  label: 'Prénom',
+                  validator: _required,
+                ),
+                const SizedBox(height: 12),
+                _InputField(
+                  controller: _email,
+                  label: 'Adresse e-mail',
+                  icon: Icons.mail_outline_rounded,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: validateRegistrationEmail,
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: _chooseBirthDate,
+                  icon: const Icon(Icons.calendar_month_outlined),
+                  label: Text(
+                    _dateOfBirth == null
+                        ? 'Date de naissance'
+                        : '${_dateOfBirth!.day.toString().padLeft(2, '0')}/'
+                              '${_dateOfBirth!.month.toString().padLeft(2, '0')}/'
+                              '${_dateOfBirth!.year}',
+                  ),
+                  style: _outlineStyle,
+                ),
+                if (_dateError != null) ...[
+                  const SizedBox(height: 5),
+                  Text(
+                    _dateError!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontSize: 12,
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 12),
-              _InputField(
-                controller: _firstName,
-                label: 'Prénom',
-                validator: _required,
-              ),
-              const SizedBox(height: 12),
-              _InputField(
-                controller: _email,
-                label: 'Adresse e-mail',
-                icon: Icons.mail_outline_rounded,
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) => value != null && value.contains('@')
-                    ? null
-                    : 'Adresse e-mail invalide.',
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: _chooseBirthDate,
-                icon: const Icon(Icons.calendar_month_outlined),
-                label: Text(
-                  _dateOfBirth == null
-                      ? 'Date de naissance'
-                      : '${_dateOfBirth!.day.toString().padLeft(2, '0')}/'
-                            '${_dateOfBirth!.month.toString().padLeft(2, '0')}/'
-                            '${_dateOfBirth!.year}',
-                ),
-                style: _outlineStyle,
-              ),
-              if (_dateError != null) ...[
-                const SizedBox(height: 5),
-                Text(
-                  _dateError!,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
-                    fontSize: 12,
+                if (_dateOfBirth != null) ...[
+                  const SizedBox(height: 5),
+                  Text(
+                    ageOnDate(_dateOfBirth!, DateTime.now()) < 18
+                        ? 'Âge : ${ageOnDate(_dateOfBirth!, DateTime.now())} ans. L’inscription est recommandée à partir de 18 ans.'
+                        : 'Âge : ${ageOnDate(_dateOfBirth!, DateTime.now())} ans.',
+                    style: TextStyle(color: context.appMuted, fontSize: 12),
                   ),
+                ],
+                const SizedBox(height: 12),
+                _InputField(
+                  controller: _identity,
+                  label: 'N° carte d’identité ou NIF',
+                  icon: Icons.badge_outlined,
+                  validator: _required,
                 ),
               ],
-              const SizedBox(height: 12),
-              _InputField(
-                controller: _identity,
-                label: 'N° carte d’identité ou NIF',
-                icon: Icons.badge_outlined,
-                validator: _required,
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _RegistrationSection(
-            number: '02',
-            title: 'Téléphone et adresse',
-            subtitle:
-                'Le téléphone sera utilisé pour vos transactions en ligne.',
-            icon: Icons.location_on_outlined,
-            children: [
-              _InputField(
-                controller: _phone,
-                label: 'Numéro de téléphone',
-                icon: Icons.phone_outlined,
-                keyboardType: TextInputType.phone,
-                validator: _phoneValidator,
-              ),
-              const SizedBox(height: 12),
-              _InputField(
-                controller: _city,
-                label: 'Ville',
-                icon: Icons.location_city_outlined,
-                validator: _required,
-              ),
-              const SizedBox(height: 12),
-              _InputField(
-                controller: _commune,
-                label: 'Commune',
-                validator: _required,
-              ),
-              const SizedBox(height: 12),
-              _InputField(
-                controller: _neighborhood,
-                label: 'Quartier',
-                validator: _required,
-              ),
-              const SizedBox(height: 12),
-              _InputField(
-                controller: _cell,
-                label: 'Cellule',
-                validator: _required,
-              ),
-              const SizedBox(height: 12),
-              _InputField(
-                controller: _houseNumber,
-                label: 'Numéro de maison',
-                icon: Icons.home_outlined,
-                validator: _required,
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _RegistrationSection(
-            number: '03',
-            title: 'Photo de profil et identité',
-            subtitle: 'Choisissez des images nettes depuis la galerie.',
-            icon: Icons.verified_user_outlined,
-            children: [
-              _ProfilePhotoPicker(
-                image: _profileImage,
-                hasError: _imageError != null && _profileImage == null,
-                onTap: () => _pickImage(
-                  (image) => setState(() {
-                    _profileImage = image;
-                    _imageError = null;
-                  }),
+            ),
+            const SizedBox(height: 12),
+            _RegistrationSection(
+              number: '02',
+              title: 'Téléphone et adresse',
+              subtitle:
+                  'Le téléphone sera utilisé pour vos transactions en ligne.',
+              icon: Icons.location_on_outlined,
+              children: [
+                _InputField(
+                  controller: _phone,
+                  label: 'Numéro de téléphone',
+                  icon: Icons.phone_outlined,
+                  keyboardType: TextInputType.phone,
+                  validator: validateRegistrationPhone,
                 ),
-                onRemove: _profileImage == null
-                    ? null
-                    : () => setState(() => _profileImage = null),
-              ),
-              const SizedBox(height: 15),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final cardWidth = (constraints.maxWidth - 10) / 2;
-                  return Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      SizedBox(
-                        width: cardWidth,
-                        child: _DocumentImagePicker(
-                          title: 'Recto de la pièce',
-                          image: _identityFrontImage,
-                          hasError:
-                              _imageError != null &&
-                              _identityFrontImage == null,
-                          onTap: () => _pickImage(
-                            (image) => setState(() {
-                              _identityFrontImage = image;
-                              _imageError = null;
-                            }),
-                          ),
-                          onRemove: _identityFrontImage == null
-                              ? null
-                              : () =>
-                                    setState(() => _identityFrontImage = null),
-                        ),
-                      ),
-                      SizedBox(
-                        width: cardWidth,
-                        child: _DocumentImagePicker(
-                          title: 'Verso de la pièce',
-                          image: _identityBackImage,
-                          hasError:
-                              _imageError != null && _identityBackImage == null,
-                          onTap: () => _pickImage(
-                            (image) => setState(() {
-                              _identityBackImage = image;
-                              _imageError = null;
-                            }),
-                          ),
-                          onRemove: _identityBackImage == null
-                              ? null
-                              : () => setState(() => _identityBackImage = null),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-              _InputField(
-                controller: _password,
-                label: 'Mot de passe (8 caractères minimum)',
-                icon: Icons.lock_outline_rounded,
-                obscureText: _obscurePassword,
-                suffix: IconButton(
-                  onPressed: () =>
-                      setState(() => _obscurePassword = !_obscurePassword),
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                  ),
+                const SizedBox(height: 12),
+                _InputField(
+                  controller: _city,
+                  label: 'Ville',
+                  icon: Icons.location_city_outlined,
+                  validator: _required,
                 ),
-                validator: (value) => value != null && value.length >= 8
-                    ? null
-                    : '8 caractères minimum.',
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _RegistrationSection(
-            number: '04',
-            title: 'Votre mandataire',
-            subtitle: 'Personne de confiance liée à votre compte.',
-            icon: Icons.people_outline_rounded,
-            children: [
-              _InputField(
-                controller: _agentName,
-                label: 'Nom complet du mandataire',
-                validator: _required,
-              ),
-              const SizedBox(height: 12),
-              _InputField(
-                controller: _agentContact,
-                label: 'Téléphone ou e-mail',
-                icon: Icons.phone_outlined,
-                keyboardType: TextInputType.phone,
-                validator: _required,
-              ),
-              const SizedBox(height: 12),
-              _InputField(
-                controller: _agentRelation,
-                label: 'Lien avec le client',
-                validator: _required,
-              ),
-              const SizedBox(height: 16),
-              _DocumentImagePicker(
-                title: 'Pièce d’identité du mandataire',
-                image: _agentIdentityImage,
-                hasError: _imageError != null && _agentIdentityImage == null,
-                onTap: () => _pickImage(
-                  (image) => setState(() {
-                    _agentIdentityImage = image;
-                    _imageError = null;
-                  }),
+                const SizedBox(height: 12),
+                _InputField(
+                  controller: _commune,
+                  label: 'Commune',
+                  validator: _required,
                 ),
-                onRemove: _agentIdentityImage == null
-                    ? null
-                    : () => setState(() => _agentIdentityImage = null),
-              ),
-              if (_imageError != null) ...[
-                const SizedBox(height: 10),
-                Text(
-                  _imageError!,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
-                    fontSize: 12,
-                  ),
+                const SizedBox(height: 12),
+                _InputField(
+                  controller: _neighborhood,
+                  label: 'Quartier',
+                  validator: _required,
+                ),
+                const SizedBox(height: 12),
+                _InputField(
+                  controller: _cell,
+                  label: 'Cellule',
+                  validator: _required,
+                ),
+                const SizedBox(height: 12),
+                _InputField(
+                  controller: _houseNumber,
+                  label: 'Numéro de maison',
+                  icon: Icons.home_outlined,
+                  validator: _required,
                 ),
               ],
-            ],
-          ),
-          const SizedBox(height: 20),
-          GradientButton(
-            label: 'Créer mon compte',
-            icon: Icons.check_circle_outline_rounded,
-            onPressed: _submit,
-          ),
-          const SizedBox(height: 14),
-          Text(
-            'Vos images sont sélectionnées depuis la galerie et restent locales à cette démo.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: context.appMuted, fontSize: 11),
-          ),
-        ],
+            ),
+            const SizedBox(height: 12),
+            _RegistrationSection(
+              number: '03',
+              title: 'Photo de profil et pièce d’identité',
+              subtitle: 'Scannez votre pièce avec la caméra du téléphone.',
+              icon: Icons.verified_user_outlined,
+              children: [
+                _ProfilePhotoPicker(
+                  image: _profileImage,
+                  hasError: _imageError != null && _profileImage == null,
+                  onTap: () => _pickImage(
+                    (image) => setState(() {
+                      _profileImage = image;
+                      _imageError = null;
+                    }),
+                  ),
+                  onRemove: _profileImage == null
+                      ? null
+                      : () => setState(() => _profileImage = null),
+                ),
+                const SizedBox(height: 15),
+                _DocumentScannerCard(
+                  key: const ValueKey('client-identity-scanner'),
+                  title: 'Pièce d’identité du client',
+                  document: _identityDocument,
+                  hasError: _imageError != null && _identityDocument == null,
+                  isScanning: _scanningDocument,
+                  onScan: () => _scanDocument(
+                    (document) => setState(() {
+                      _identityDocument = document;
+                      _imageError = null;
+                    }),
+                  ),
+                  onRemove: _identityDocument == null
+                      ? null
+                      : () => setState(() => _identityDocument = null),
+                ),
+                const SizedBox(height: 16),
+                _InputField(
+                  controller: _password,
+                  label: 'Mot de passe',
+                  icon: Icons.lock_outline_rounded,
+                  obscureText: _obscurePassword,
+                  suffix: IconButton(
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                  ),
+                  validator: validateRegistrationPassword,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '8 caractères minimum : majuscule, minuscule, chiffre et symbole.',
+                  style: TextStyle(color: context.appMuted, fontSize: 12),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _RegistrationSection(
+              number: '04',
+              title: 'Votre mandataire',
+              subtitle: 'Personne de confiance liée à votre compte.',
+              icon: Icons.people_outline_rounded,
+              children: [
+                _InputField(
+                  controller: _agentName,
+                  label: 'Nom complet du mandataire',
+                  validator: _required,
+                ),
+                const SizedBox(height: 12),
+                _InputField(
+                  controller: _agentContact,
+                  label: 'Téléphone du mandataire',
+                  icon: Icons.phone_outlined,
+                  keyboardType: TextInputType.phone,
+                  validator: (value) {
+                    final error = validateRegistrationPhone(value);
+                    if (error != null) return error;
+                    if (normalizePhone(value!) == normalizePhone(_phone.text)) {
+                      return 'Le téléphone doit être différent de celui du client.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                _InputField(
+                  controller: _agentEmail,
+                  label: 'E-mail du mandataire',
+                  icon: Icons.mail_outline_rounded,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    final error = validateRegistrationEmail(value);
+                    if (error != null) return error;
+                    if (value!.trim().toLowerCase() ==
+                        _email.text.trim().toLowerCase()) {
+                      return 'L’e-mail doit être différent de celui du client.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                _InputField(
+                  controller: _agentIdentity,
+                  label: 'N° carte d’identité ou NIF du mandataire',
+                  icon: Icons.badge_outlined,
+                  validator: (value) {
+                    final error = _required(value);
+                    if (error != null) return error;
+                    if (normalizeIdentityNumber(value!) ==
+                        normalizeIdentityNumber(_identity.text)) {
+                      return 'La pièce doit être différente de celle du client.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                _InputField(
+                  controller: _agentRelation,
+                  label: 'Lien avec le client',
+                  validator: _required,
+                ),
+                const SizedBox(height: 16),
+                _DocumentScannerCard(
+                  key: const ValueKey('agent-identity-scanner'),
+                  title: 'Pièce d’identité du mandataire',
+                  document: _agentIdentityDocument,
+                  hasError:
+                      _imageError != null && _agentIdentityDocument == null,
+                  isScanning: _scanningDocument,
+                  onScan: () => _scanDocument(
+                    (document) => setState(() {
+                      _agentIdentityDocument = document;
+                      _imageError = null;
+                    }),
+                  ),
+                  onRemove: _agentIdentityDocument == null
+                      ? null
+                      : () => setState(() => _agentIdentityDocument = null),
+                ),
+                if (_imageError != null) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    _imageError!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 20),
+            GradientButton(
+              label: 'Créer mon compte',
+              icon: Icons.check_circle_outline_rounded,
+              onPressed: _submit,
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Les pièces sont scannées par la caméra et conservées uniquement '
+              'dans cette démo. Elles ne sont pas envoyées à un serveur.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: context.appMuted, fontSize: 11),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -539,16 +565,6 @@ class _RegistrationFormState extends State<_RegistrationForm> {
 
   String? _required(String? value) =>
       value == null || value.trim().isEmpty ? 'Champ obligatoire.' : null;
-
-  String? _phoneValidator(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Champ obligatoire.';
-    }
-    if (RegExp(r'\d').allMatches(value).length < 7) {
-      return 'Entrez un numéro valide (au moins 7 chiffres).';
-    }
-    return null;
-  }
 
   Future<void> _pickImage(ValueChanged<_PickedImage> onPicked) async {
     try {
@@ -569,13 +585,80 @@ class _RegistrationFormState extends State<_RegistrationForm> {
     }
   }
 
+  Future<void> _scanDocument(ValueChanged<_ScannedDocument> onScanned) async {
+    if (_scanningDocument) return;
+    if (kIsWeb ||
+        (defaultTargetPlatform != TargetPlatform.android &&
+            defaultTargetPlatform != TargetPlatform.iOS)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Le scan de documents est disponible sur Android et iOS uniquement.',
+          ),
+        ),
+      );
+      return;
+    }
+    setState(() => _scanningDocument = true);
+    try {
+      final result = await CunningDocumentScanner.scanDocuments(
+        noOfPages: 2,
+        scannerSource: ScannerSource.camera,
+        output: ScanOutput.images,
+      );
+      if (result == null) return;
+      if (result.images.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Le scan ne contient aucune page.')),
+          );
+        }
+        return;
+      }
+      final pages = <_PickedImage>[];
+      for (final path in result.images) {
+        final file = XFile(path);
+        pages.add(_PickedImage(file: file, bytes: await file.readAsBytes()));
+      }
+      if (!mounted || pages.isEmpty) return;
+      onScanned(_ScannedDocument(pages: pages));
+      if (result.discardedPages > 0 && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${result.discardedPages} page(s) au-delà de la limite de 2 n’ont pas été conservées.',
+            ),
+          ),
+        );
+      }
+    } on CunningDocumentScannerException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            error.code == 'permission_denied'
+                ? 'Autorisez l’accès à la caméra pour scanner la pièce.'
+                : 'Le scan du document a échoué : ${error.message}',
+          ),
+        ),
+      );
+    } on Exception catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Impossible de scanner la pièce : $error')),
+      );
+    } finally {
+      if (mounted) setState(() => _scanningDocument = false);
+    }
+  }
+
   Future<void> _chooseBirthDate() async {
     final today = DateTime.now();
     final date = await showDatePicker(
       context: context,
       initialDate: DateTime(today.year - 20, today.month, today.day),
       firstDate: DateTime(1900),
-      lastDate: DateTime(today.year - 18, today.month, today.day),
+      lastDate: DateTime(today.year, today.month, today.day),
       helpText: 'Date de naissance',
     );
     if (date != null) {
@@ -596,16 +679,17 @@ class _RegistrationFormState extends State<_RegistrationForm> {
       return;
     }
     if (_profileImage == null ||
-        _identityFrontImage == null ||
-        _identityBackImage == null ||
-        _agentIdentityImage == null) {
+        _identityDocument == null ||
+        _agentIdentityDocument == null) {
       setState(() {
-        _imageError = 'Ajoutez la photo de profil, le recto et le verso de votre pièce, ainsi que celle du mandataire.';
+        _imageError =
+            'Ajoutez votre photo de profil et scannez les pièces d’identité '
+            'du client et du mandataire.';
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Sélectionnez toutes les images obligatoires depuis la galerie.',
+            'La photo de profil et les deux pièces scannées sont obligatoires.',
           ),
         ),
       );
@@ -627,18 +711,20 @@ class _RegistrationFormState extends State<_RegistrationForm> {
       cell: _cell.text.trim(),
       houseNumber: _houseNumber.text.trim(),
       profilePhotoPath: _profileImage!.file.path,
-      identityFrontPath: _identityFrontImage!.file.path,
-      identityBackPath: _identityBackImage!.file.path,
       profilePhotoBytes: _profileImage!.bytes,
-      identityFrontBytes: _identityFrontImage!.bytes,
-      identityBackBytes: _identityBackImage!.bytes,
+      identityDocumentPages: _identityDocument!.pages
+          .map((page) => page.bytes)
+          .toList(),
       passwordHash: 'pending-server-authentication',
       mandataire: Mandataire(
         fullName: _agentName.text.trim(),
         contact: _agentContact.text.trim(),
+        email: _agentEmail.text.trim(),
+        identityNumber: _agentIdentity.text.trim(),
         relationship: _agentRelation.text.trim(),
-        identityDocumentPath: _agentIdentityImage!.file.path,
-        identityDocumentBytes: _agentIdentityImage!.bytes,
+        identityDocumentPages: _agentIdentityDocument!.pages
+            .map((page) => page.bytes)
+            .toList(),
       ),
     );
     widget.onRegister(user);
@@ -705,6 +791,12 @@ class _PickedImage {
 
   final XFile file;
   final Uint8List bytes;
+}
+
+class _ScannedDocument {
+  const _ScannedDocument({required this.pages});
+
+  final List<_PickedImage> pages;
 }
 
 class _RegistrationHero extends StatelessWidget {
@@ -1020,121 +1112,134 @@ class _ProfilePhotoPicker extends StatelessWidget {
   );
 }
 
-class _DocumentImagePicker extends StatelessWidget {
-  const _DocumentImagePicker({
+class _DocumentScannerCard extends StatelessWidget {
+  const _DocumentScannerCard({
+    super.key,
     required this.title,
-    required this.image,
+    required this.document,
     required this.hasError,
-    required this.onTap,
+    required this.isScanning,
+    required this.onScan,
     required this.onRemove,
   });
 
   final String title;
-  final _PickedImage? image;
+  final _ScannedDocument? document;
   final bool hasError;
-  final VoidCallback onTap;
+  final bool isScanning;
+  final VoidCallback onScan;
   final VoidCallback? onRemove;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(10),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(
-        color: hasError
-            ? Theme.of(context).colorScheme.error
-            : Theme.of(context).colorScheme.outlineVariant,
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final firstPage = document?.pages.firstOrNull;
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(17),
+        border: Border.all(
+          color: hasError
+              ? theme.colorScheme.error
+              : theme.colorScheme.outlineVariant,
+        ),
       ),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(11),
-          child: Container(
-            height: 82,
-            width: double.infinity,
-            color: Theme.of(context).colorScheme.primaryContainer,
-            child: image == null
-                ? Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.add_photo_alternate_outlined,
-                        color: Theme.of(context).colorScheme.primary,
-                        size: 26,
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Aucune image',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontSize: 9,
-                        ),
-                      ),
-                    ],
-                  )
-                : Image.memory(
-                    image!.bytes,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: 76,
+              height: 76,
+              color: theme.colorScheme.primaryContainer,
+              child: firstPage == null
+                  ? Icon(
+                      Icons.document_scanner_outlined,
+                      color: theme.colorScheme.primary,
+                      size: 30,
+                    )
+                  : Image.memory(firstPage.bytes, fit: BoxFit.cover),
+            ),
           ),
-        ),
-        const SizedBox(height: 9),
-        Text(
-          title,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontSize: 10,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          image?.file.name ?? 'Obligatoire',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            fontSize: 9,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Row(
-          children: [
-            Expanded(
-              child: TextButton.icon(
-                onPressed: onTap,
-                icon: const Icon(Icons.photo_library_outlined, size: 13),
-                label: Text(image == null ? 'Galerie' : 'Changer'),
-                style: TextButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.primary,
-                  padding: EdgeInsets.zero,
-                  minimumSize: const Size(10, 28),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  textStyle: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-              ),
+                const SizedBox(height: 4),
+                Text(
+                  document == null
+                      ? 'Scannez jusqu’au recto et verso'
+                      : '${document!.pages.length} page'
+                            '${document!.pages.length > 1 ? 's' : ''} scannée'
+                            '${document!.pages.length > 1 ? 's' : ''}',
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontSize: 10,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  children: [
+                    TextButton.icon(
+                      onPressed: isScanning ? null : onScan,
+                      icon: isScanning
+                          ? const SizedBox(
+                              width: 15,
+                              height: 15,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(
+                              Icons.document_scanner_outlined,
+                              size: 16,
+                            ),
+                      label: Text(
+                        isScanning
+                            ? 'Ouverture…'
+                            : document == null
+                            ? 'Scanner'
+                            : 'Rescanner',
+                      ),
+                      style: TextButton.styleFrom(
+                        foregroundColor: theme.colorScheme.primary,
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(10, 30),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        textStyle: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    if (onRemove != null)
+                      TextButton(
+                        onPressed: isScanning ? null : onRemove,
+                        style: TextButton.styleFrom(
+                          foregroundColor: theme.colorScheme.error,
+                          padding: EdgeInsets.zero,
+                          minimumSize: const Size(10, 30),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          textStyle: const TextStyle(fontSize: 11),
+                        ),
+                        child: const Text('Supprimer'),
+                      ),
+                  ],
+                ),
+              ],
             ),
-            if (onRemove != null)
-              IconButton(
-                tooltip: 'Supprimer l’image',
-                onPressed: onRemove,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                icon: const Icon(Icons.delete_outline_rounded, size: 16),
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-          ],
-        ),
-      ],
-    ),
-  );
+          ),
+        ],
+      ),
+    );
+  }
 }

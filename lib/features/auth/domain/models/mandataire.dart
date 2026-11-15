@@ -5,13 +5,15 @@ class Mandataire {
     required this.fullName,
     required this.contact,
     required this.relationship,
-    required this.identityDocumentPath,
-    this.identityDocumentBytes,
+    this.email = '',
+    this.identityNumber = '',
+    this.identityDocumentPages = const [],
   });
 
   final String fullName;
   final String contact;
   final String relationship;
-  final String identityDocumentPath;
-  final Uint8List? identityDocumentBytes;
+  final String email;
+  final String identityNumber;
+  final List<Uint8List> identityDocumentPages;
 }

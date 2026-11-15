@@ -17,8 +17,6 @@ void main() {
       dateOfBirth: DateTime(1995, 6, 12),
       identityNumber: 'ID-TEST',
       profilePhotoPath: '',
-      identityFrontPath: '',
-      identityBackPath: '',
       phoneNumber: '+243 900 000 000',
       city: 'Kinshasa',
       commune: 'Gombe',
@@ -30,7 +28,6 @@ void main() {
         fullName: 'Mandataire Test',
         contact: '000',
         relationship: 'Proche',
-        identityDocumentPath: '',
       ),
     );
 

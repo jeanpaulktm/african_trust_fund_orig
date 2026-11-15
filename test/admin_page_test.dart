@@ -24,14 +24,11 @@ void main() {
         dateOfBirth: DateTime(1995, 6, 12),
         identityNumber: 'ID-001',
         profilePhotoPath: 'profile.jpg',
-        identityFrontPath: 'front.jpg',
-        identityBackPath: 'back.jpg',
         passwordHash: 'pending-server-authentication',
         mandataire: const Mandataire(
           fullName: 'Grace Mbuyi',
           contact: '+243000000000',
           relationship: 'Soeur',
-          identityDocumentPath: 'agent.jpg',
         ),
       );
       final wallet = WalletService(

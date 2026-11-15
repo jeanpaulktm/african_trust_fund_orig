@@ -55,8 +55,14 @@ remplacés par des adaptateurs de données/API lorsque le backend sera disponibl
   palette émeraude en mode clair, bleu marine/or/blanc en mode sombre.
 - Navigation client animée, tableau de bord avec apparition progressive des
   principales cartes/actions et écran de notifications de démonstration.
-- Inscription avec sélection des justificatifs depuis la galerie, connexion
-  démo, profil et menu client.
+- Inscription avec photo de profil depuis la galerie et scan caméra des pièces,
+  connexion démo, profil et menu client.
+- Le formulaire demande des e-mails, téléphones et numéros de pièce distincts
+  pour le client et son mandataire. Il calcule l'âge et recommande 18 ans sans
+  bloquer les mineurs. Le mot de passe doit comporter au moins 8 caractères,
+  une majuscule, une minuscule, un chiffre et un symbole.
+- Le scanner d'identité capture jusqu'à deux pages par personne, pour conserver
+  les deux faces de la pièce dans un même document.
 - Portefeuille USD/CDF, virements convertis au taux administré et journal des
   opérations. Dépôt et retrait démarrent un flux Mobile Money via une interface
   fournisseur; les retraits proposent aussi un bordereau QR au guichet avec
@@ -94,6 +100,20 @@ décaissement : l'application ne stocke ni ne compare localement le mot de passe
 initial, et ne conserve pas le mot de passe saisi. Il faut relier cette
 interface à une API d'authentification qui vérifie le mot de passe côté serveur,
 puis traiter l'approbation et le versement dans une transaction serveur atomique.
+La connexion démo ne vérifie pas le mot de passe et ne fournit pas de limitation
+des tentatives. Les validations d'inscription ne constituent pas une garantie
+de sécurité ou d'unicité entre comptes : le backend doit les répéter, normaliser
+les coordonnées, imposer l'unicité en base et limiter les tentatives de
+connexion côté serveur. Les scans différents d'une même pièce ne peuvent pas
+être détectés par ces contrôles.
+
+Les scans KYC passent par `cunning_document_scanner` sur Android/iOS avec
+capture caméra uniquement et cadrage automatique ou manuel selon l'appareil.
+Le scanner utilise un cache temporaire de fichiers sur l'appareil; les pages
+restent aussi en mémoire pendant la démo et ne sont ni transférées ni persistées
+par un serveur. Le scan ne vérifie pas l'authenticité d'une pièce d'identité.
+Le scanner requiert Android API 24+ et iOS 13+ (le projet iOS est configuré
+au-dessus de ce minimum). Il n'est pas disponible sur le Web ni sur ordinateur.
 
 Avant toute mise en production, authentification, rôles, KYC, ledger, taux,
 intérêts, demandes de crédit, journal d'audit et mouvements de fonds doivent

@@ -21,6 +21,7 @@ import 'features/wallet/presentation/balances_page.dart';
 import 'features/wallet/domain/services/wallet_service.dart';
 import 'features/wallet/presentation/wallet_page.dart';
 
+
 void main() {
   runApp(const AfricanTrustFundApp());
 }
@@ -65,14 +66,12 @@ class _AfricanTrustFundAppState extends State<AfricanTrustFundApp>
         cell: 'Cellule 1',
         houseNumber: '12',
         profilePhotoPath: 'profil-demo.jpg',
-        identityFrontPath: 'identite-recto-demo.jpg',
-        identityBackPath: 'identite-verso-demo.jpg',
         passwordHash: 'pending-server-authentication',
         mandataire: const Mandataire(
           fullName: 'Grace Mbuyi',
           contact: '+243 000 000 000',
           relationship: 'Soeur',
-          identityDocumentPath: 'mandataire-demo.jpg',
+          identityDocumentPages: [],
         ),
       ),
       User(
@@ -90,14 +89,12 @@ class _AfricanTrustFundAppState extends State<AfricanTrustFundApp>
         cell: 'Cellule 2',
         houseNumber: '24',
         profilePhotoPath: '',
-        identityFrontPath: '',
-        identityBackPath: '',
         passwordHash: 'pending-server-authentication',
         mandataire: const Mandataire(
           fullName: 'Paul Ilunga',
           contact: '+243 000 000 001',
           relationship: 'Parent',
-          identityDocumentPath: '',
+          identityDocumentPages: [],
         ),
       ),
     ];

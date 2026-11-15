@@ -20,14 +20,11 @@ void main() {
       dateOfBirth: DateTime(1995),
       identityNumber: 'ID-TEST',
       profilePhotoPath: '',
-      identityFrontPath: '',
-      identityBackPath: '',
       passwordHash: 'pending-server-authentication',
       mandataire: const Mandataire(
         fullName: 'Mandataire Test',
         contact: '000',
         relationship: 'Proche',
-        identityDocumentPath: '',
       ),
     );
     final wallet = WalletService(
@@ -40,7 +37,9 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(body: AnalyticsPage(user: user, wallet: wallet)),
+        home: Scaffold(
+          body: AnalyticsPage(user: user, wallet: wallet),
+        ),
       ),
     );
     await tester.pumpAndSettle();

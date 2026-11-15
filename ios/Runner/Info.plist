@@ -29,7 +29,7 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Choisissez vos photos de profil et justificatifs pour votre inscription.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>La caméra sert à scanner les bordereaux de retrait au guichet.</string>
+	<string>La caméra sert à scanner les pièces d’identité du client et du mandataire ainsi que les bordereaux de retrait.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

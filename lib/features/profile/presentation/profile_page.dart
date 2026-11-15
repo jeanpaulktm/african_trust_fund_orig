@@ -119,6 +119,13 @@ class ProfilePage extends StatelessWidget {
           children: [
             _ProfileRow(label: 'Nom', value: user.mandataire.fullName),
             _ProfileRow(label: 'Contact', value: user.mandataire.contact),
+            if (user.mandataire.email.isNotEmpty)
+              _ProfileRow(label: 'E-mail', value: user.mandataire.email),
+            if (user.mandataire.identityNumber.isNotEmpty)
+              _ProfileRow(
+                label: 'N° identité / NIF',
+                value: user.mandataire.identityNumber,
+              ),
             _ProfileRow(
               label: 'Lien',
               value: user.mandataire.relationship,
@@ -137,19 +144,12 @@ class ProfilePage extends StatelessWidget {
               imageBytes: user.profilePhotoBytes,
             ),
             _DocumentStatus(
-              label: 'Pièce d’identité recto',
-              fileName: user.identityFrontPath,
-              imageBytes: user.identityFrontBytes,
-            ),
-            _DocumentStatus(
-              label: 'Pièce d’identité verso',
-              fileName: user.identityBackPath,
-              imageBytes: user.identityBackBytes,
+              label: 'Pièce d’identité du client',
+              imagePages: user.identityDocumentPages,
             ),
             _DocumentStatus(
               label: 'Pièce du mandataire',
-              fileName: user.mandataire.identityDocumentPath,
-              imageBytes: user.mandataire.identityDocumentBytes,
+              imagePages: user.mandataire.identityDocumentPages,
               showDivider: false,
             ),
           ],
@@ -269,75 +269,92 @@ class _ProfileRow extends StatelessWidget {
 class _DocumentStatus extends StatelessWidget {
   const _DocumentStatus({
     required this.label,
-    required this.fileName,
-    required this.imageBytes,
+    this.fileName = '',
+    this.imageBytes,
+    this.imagePages = const [],
     this.showDivider = true,
   });
 
   final String label;
   final String fileName;
   final Uint8List? imageBytes;
+  final List<Uint8List> imagePages;
   final bool showDivider;
 
   @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: 13),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(9),
-              child: Container(
-                width: 40,
-                height: 40,
-                color: Theme.of(context).colorScheme.primaryContainer,
-                child: imageBytes == null
-                    ? Icon(
-                        Icons.description_outlined,
-                        color: Theme.of(context).colorScheme.primary,
-                        size: 19,
-                      )
-                    : Image.memory(imageBytes!, fit: BoxFit.cover),
+  Widget build(BuildContext context) {
+    final previewBytes = imageBytes ?? imagePages.firstOrNull;
+    final hasDocument = imageBytes != null || imagePages.isNotEmpty;
+    final subtitle = imageBytes != null
+        ? (fileName.isEmpty ? 'Photo enregistrée' : fileName)
+        : imagePages.isEmpty
+        ? 'Aucun scan'
+        : '${imagePages.length} page'
+              '${imagePages.length > 1 ? 's' : ''} scannée'
+              '${imagePages.length > 1 ? 's' : ''}';
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 13),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(9),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  child: previewBytes == null
+                      ? Icon(
+                          Icons.description_outlined,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 19,
+                        )
+                      : Image.memory(previewBytes, fit: BoxFit.cover),
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    fileName.isEmpty ? 'Aucun fichier' : fileName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontSize: 11,
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: 11,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 7),
-            Icon(
-              Icons.check_circle_rounded,
-              color: Theme.of(context).colorScheme.primary,
-              size: 18,
-            ),
-          ],
+              const SizedBox(width: 7),
+              Icon(
+                hasDocument
+                    ? Icons.check_circle_rounded
+                    : Icons.pending_outlined,
+                color: hasDocument
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                size: 18,
+              ),
+            ],
+          ),
         ),
-      ),
-      if (showDivider)
-        Divider(color: Theme.of(context).colorScheme.outlineVariant),
-    ],
-  );
+        if (showDivider)
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+      ],
+    );
+  }
 }
